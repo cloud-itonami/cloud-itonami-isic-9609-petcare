@@ -1,0 +1,71 @@
+(ns petcare.sim
+  "Demo driver -- `clojure -M:dev:run`. Walks a clean ticket through
+  intake -> care-plan verification -> rabies-vaccination screening ->
+  grooming application (escalate/approve/commit) -> animal return
+  (escalate/approve/commit), then shows every HARD-hold scenario:
+
+    - a jurisdiction with no spec-basis (ticket-2, \"ATL\")
+    - a heated cage dryer on a brachycephalic dog (ticket-3) -- the
+      combination that kills animals in real grooming salons
+    - a lapsed rabies vaccination (ticket-4)
+    - a full restraint table on a senior dog (ticket-5)
+    - an op outside the closed vocabulary
+    - a proposal whose prose reaches for a veterinary act
+
+  Deterministic and offline."
+  (:require [langgraph.graph :as g]
+            [petcare.store :as store]
+            [petcare.operation :as op]))
+
+(def operator {:actor-id "op-1" :actor-role :groomer :phase 3})
+
+(defn- exec-op [actor tid request context]
+  (g/run* actor {:request request :context context} {:thread-id tid}))
+
+(defn- approve! [actor tid]
+  (g/run* actor {:approval {:status :approved :by "op-1"}} {:thread-id tid :resume? true}))
+
+(defn -main [& _]
+  (let [db (store/seed-db)
+        actor (op/build db)]
+    (println "== ticket/intake ticket-1 (JPN, healthy adult) ==")
+    (exec-op actor "t1" {:op :ticket/intake :subject "ticket-1"
+                         :patch {:id "ticket-1" :owner "Sakura Tanaka"}} operator)
+
+    (println "== careplan/verify ticket-1 (escalates -- approves) ==")
+    (exec-op actor "t2" {:op :careplan/verify :subject "ticket-1"} operator)
+    (approve! actor "t2")
+
+    (println "== vaccination/screen ticket-1 (valid; escalates -- approves) ==")
+    (exec-op actor "t3" {:op :vaccination/screen :subject "ticket-1"} operator)
+    (approve! actor "t3")
+
+    (println "== actuation/apply-grooming-process ticket-1 (never auto) ==")
+    (exec-op actor "t4" {:op :actuation/apply-grooming-process :subject "ticket-1"} operator)
+    (approve! actor "t4")
+
+    (println "== actuation/return-animal ticket-1 (never auto) ==")
+    (exec-op actor "t5" {:op :actuation/return-animal :subject "ticket-1"} operator)
+    (approve! actor "t5")
+
+    (println "== HOLD: no spec-basis (ticket-2, ATL) ==")
+    (exec-op actor "h1" {:op :careplan/verify :subject "ticket-2"} operator)
+
+    (println "== HOLD: heated cage dryer on a brachycephalic dog (ticket-3) ==")
+    (exec-op actor "h2" {:op :actuation/apply-grooming-process :subject "ticket-3"} operator)
+
+    (println "== HOLD: rabies vaccination lapsed (ticket-4) ==")
+    (exec-op actor "h3" {:op :vaccination/screen :subject "ticket-4"} operator)
+
+    (println "== HOLD: full restraint table on a senior dog (ticket-5) ==")
+    (exec-op actor "h4" {:op :actuation/apply-grooming-process :subject "ticket-5"} operator)
+
+    (println "== HOLD: op outside the closed vocabulary ==")
+    (exec-op actor "h5" {:op :actuation/sedate-animal :subject "ticket-1"} operator)
+
+    (println "== HOLD: double grooming (ticket-1 already groomed above) ==")
+    (exec-op actor "h6" {:op :actuation/apply-grooming-process :subject "ticket-1"} operator)
+
+    (println "\n== ledger (append-only) ==")
+    (doseq [f (store/ledger db)]
+      (println " " (:t f) (:op f) (:subject f) (or (:basis f) "")))))
