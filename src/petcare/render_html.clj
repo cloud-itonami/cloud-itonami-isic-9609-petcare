@@ -410,14 +410,20 @@
 (defn- tickets-section [db]
   (let [ledger (store/ledger db)
         last-fact (fn [id] (last (filter #(= id (:subject %)) ledger)))
+        ;; the LAST decision recorded against this ticket, which is not
+        ;; necessarily the last step of its lifecycle -- the op is shown
+        ;; beside it so the cell traces to a run in the table below
+        ;; instead of reading as "this is where the animal ended up".
         status (fn [id]
-                 (let [f (last-fact id)]
+                 (let [f (last-fact id)
+                       tail (str " " (muted (kw->s (:op f))))]
                    (case (:t f)
-                     :committed (ok "committed")
-                     :governor-hold (if (seq (:basis f))
-                                      (bad (str "HARD hold · " (kw->s (first (:basis f)))))
-                                      (warn (str "phase hold · " (kw->s (:phase-reason f)))))
-                     :approval-rejected (warn "declined by approver")
+                     :committed (str (ok "committed") tail)
+                     :governor-hold (str (if (seq (:basis f))
+                                           (bad (str "HARD hold · " (kw->s (first (:basis f)))))
+                                           (warn (str "phase hold · " (kw->s (:phase-reason f)))))
+                                         tail)
+                     :approval-rejected (str (warn "declined by approver") tail)
                      (muted "no activity"))))
         lifecycle (fn [{:keys [grooming-applied? animal-returned?]}]
                     (cond animal-returned? (ok "groomed & returned")
@@ -566,13 +572,20 @@
           (for [h (holds db)]
             (tr [(code (:op h)) (code (:subject h))
                  (if (= :approval-rejected (:t h))
-                   (str (warn "approver-rejected"))
+                   (warn "approver-rejected")
                    (rules-cell (:basis h)))
-                 (if-let [ds (seq (map :detail (:violations h)))]
-                   (str/join "<br>" (map esc ds))
-                   (if-let [pr (:phase-reason h)]
-                     (warn (str "rollout phase gate · " (kw->s pr)))
-                     (muted "—")))
+                 ;; `:approver-rejected` carries a rule but no detail
+                 ;; string. Falling through to "—" here would render a
+                 ;; blank cell that reads like "no reason given" when in
+                 ;; fact the reason is the fact type itself.
+                 (let [ds (seq (remove str/blank? (map #(str (:detail %)) (:violations h))))]
+                   (cond
+                     ds (str/join "<br>" (map esc ds))
+                     (= :approval-rejected (:t h))
+                     (warn "escalated to a human, who declined it")
+                     (:phase-reason h)
+                     (warn (str "rollout phase gate · " (kw->s (:phase-reason h))))
+                     :else (muted "—")))
                  (if-let [p (:phase h)] (span "num" (esc p)) (muted "—"))])))))
 
 (defn- approvals-section [db runs]
