@@ -16,7 +16,7 @@
 
   The second is why `:required-evidence` asks for a vaccination
   certificate and not merely a consent form."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def spec-basis-table
   "iso3 -> requirement map. Adding a jurisdiction is a data addition,
@@ -50,7 +50,7 @@
   "The jurisdiction's requirement map, or nil -- nil means NO
   spec-basis. Never read nil as 'no requirements'."
   [iso3]
-  (get spec-basis-table (some-> iso3 str/upper-case)))
+  (get spec-basis-table (some-> iso3 str/upper)))
 
 (defn covered? [iso3] (some? (spec-basis iso3)))
 

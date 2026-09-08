@@ -44,7 +44,7 @@
          (default `docs/samples/operator-console.html`)"
   (:require [clojure.java.io :as io]
             [clojure.set :as set]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [langgraph.graph :as g]
             [petcare.advisor :as advisor]
             [petcare.facts :as facts]
