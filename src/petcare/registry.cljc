@@ -5,7 +5,7 @@
   Nothing here reads a proposal. Everything takes facts already
   recorded on the animal's ticket, which is exactly why the governor can
   use it to check the advisor instead of believing it."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 ;; ----------------------------- condition / process compatibility -----------------------------
 
@@ -40,7 +40,7 @@
 ;; ----------------------------- record drafting -----------------------------
 
 (defn- seq->number [prefix jurisdiction seq-n]
-  (str prefix "-" (str/upper-case (or jurisdiction "XXX")) "-"
+  (str prefix "-" (str/upper (or jurisdiction "XXX")) "-"
        (str/join (repeat (max 0 (- 4 (count (str (inc seq-n))))) "0"))
        (inc seq-n)))
 
