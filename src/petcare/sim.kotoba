@@ -1,5 +1,5 @@
 (ns petcare.sim
-  "Demo driver -- `clojure -M:dev:run`. Walks a clean ticket through
+  "Demo driver -- `kbb -M:dev:run`. Walks a clean ticket through
   intake -> care-plan verification -> rabies-vaccination screening ->
   grooming application (escalate/approve/commit) -> animal return
   (escalate/approve/commit), then shows every HARD-hold scenario:

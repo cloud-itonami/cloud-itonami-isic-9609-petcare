@@ -95,8 +95,8 @@ why this table is set membership and not a confidence score.
 ## Run it
 
 ```bash
-clojure -M:dev:run     # 5 commits and 6 distinct governor holds
-clojure -M:dev:test    # 33 tests / 93 assertions
+kbb -M:dev:run     # 5 commits and 6 distinct governor holds
+kbb -M:dev:test    # 33 tests / 93 assertions
 ```
 
 The demo ledger ends like this — every hold names its own rule:
