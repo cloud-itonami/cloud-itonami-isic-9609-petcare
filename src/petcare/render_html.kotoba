@@ -40,7 +40,7 @@
   Deterministic and offline: no timestamps, no network, no map-iteration
   order left to chance. Two runs are byte-identical.
 
-  Usage: `clojure -M:dev:render-html [out-file]`
+  Usage: `kbb -M:dev:render-html [out-file]`
          (default `docs/samples/operator-console.html`)"
   (:require [clojure.java.io :as io]
             [clojure.set :as set]
@@ -720,7 +720,7 @@
    "<main>\n"
    "  <div class=\"banner\">\n"
    "    <p>Generated at build time by <code>petcare.render-html</code> "
-   "(<code>clojure -M:dev:render-html</code>) by running this repo's own actor — "
+   "(<code>kbb -M:dev:render-html</code>) by running this repo's own actor — "
    "<code>petcare.advisor</code> → <code>petcare.governor</code> → <code>petcare.phase</code> → "
    "<code>petcare.store</code>, through the compiled <code>langgraph</code> StateGraph — against "
    "<code>petcare.store/demo-data</code>. No row is hand-written. The build fails if the run "
